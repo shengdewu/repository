@@ -1,0 +1,20 @@
+﻿Build started 2016/5/4 21:15:39.
+     1>Project "F:\ComputerVisionSystem\ComputerVisionSystem\ComputerVisionSystem.vcxproj" on node 2 (build target(s)).
+     1>InitializeBuildStatus:
+         Creating "Debug\ComputerVisionSystem.unsuccessfulbuild" because "AlwaysCreate" was specified.
+       CustomBuild:
+         All outputs are up-to-date.
+       ClCompile:
+         All outputs are up-to-date.
+         All outputs are up-to-date.
+       Link:
+         All outputs are up-to-date.
+         ComputerVisionSystem.vcxproj -> F:\ComputerVisionSystem\Win32\Debug\ComputerVisionSystem.exe
+       FinalizeBuildStatus:
+         Deleting file "Debug\ComputerVisionSystem.unsuccessfulbuild".
+         Touching "Debug\ComputerVisionSystem.lastbuildstate".
+     1>Done Building Project "F:\ComputerVisionSystem\ComputerVisionSystem\ComputerVisionSystem.vcxproj" (build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.14
