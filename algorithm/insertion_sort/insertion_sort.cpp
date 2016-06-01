@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <malloc.h>
 
+//≤Â»Î≈≈–Ú
 int main(int argc, char *argv[])
 {
 	int length = argc-1;
