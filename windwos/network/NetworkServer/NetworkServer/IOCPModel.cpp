@@ -101,7 +101,7 @@ long CIOCPModel::InitCompeletionPort(int nThread /* = 0 */)
 	for (int i = 0; i > m_nWorkNum; i ++)
 	{
 		IOCP_COM::ThreadParam_Work	*pParm = new IOCP_COM::ThreadParam_Work;
-		pParm->pIOCPModel = this;
+		pParm->pThis = reinterpret_cast<void*>(this);
 		pParm->nThreadNo = i;
 		m_phWorkHandle[i] = CreateThread(NULL, 0, _WorkThread, (void*)pParm, 0, NULL);
 	}
@@ -172,11 +172,42 @@ long CIOCPModel::InitListen(const char *pSvrIp, const int nPort)
 DWORD CIOCPModel::_WorkThread(LPVOID lpParam)
 {
 	IOCP_COM::ThreadParam_Work *pManage = reinterpret_cast<IOCP_COM::ThreadParam_Work*>(lpParam);
-	CIOCPModel *pThis = pManage->pIOCPModel;
+	CIOCPModel *pThis = reinterpret_cast<CIOCPModel*>(pManage->pThis);
+
+	DWORD	nReceiveNumber = 0;
+	IOCP_COM::PER_SOCKET_CONTEXT *pListenContext = nullptr;
+	IOCP_COM::PER_IO_CONTEXT	 *pClientContext = nullptr;
+	OVERLAPPED					 *pOverlapped = nullptr;
 
 	while(WAIT_OBJECT_0 != WaitForSingleObject(pThis->m_hExitHandle, IOCP_COM::Milliseconds_ZERO))
 	{
+		
+		BOOL bReturn = GetQueuedCompletionStatus(pThis->m_hIoCompletionPort, &nReceiveNumber, 
+					reinterpret_cast<PULONG_PTR>(&pListenContext), &pOverlapped, INFINITE);
 
+		if(EXIT_COMPLETE == (DWORD)pListenContext)
+		{
+			break;
+		}
+
+		if(FALSE == bReturn)
+		{
+
+			continue;
+		}
+
+		pClientContext = nullptr;
+		pClientContext = CONTAINING_RECORD(pOverlapped, IOCP_COM::PER_IO_CONTEXT, m_hOverlapped);
+
+		switch(pClientContext->m_tOpType)
+		{
+		case IOCP_COM::ACCEPT_POSTED:
+			break;
+		case IOCP_COM::RECV_POSTED:
+			break;
+		default:
+			break;
+		}
 	}
 
 	delete pManage;
@@ -214,7 +245,7 @@ void CIOCPModel::Stop()
 		for(int i = 0; i < m_nWorkNum; i ++)
 		{
 			//通知所有完成端口退出
-			PostQueuedCompletionStatus(m_hIoCompletionPort, 0,NULL, NULL);
+			PostQueuedCompletionStatus(m_hIoCompletionPort, 0,(ULONG_PTR)EXIT_COMPLETE, NULL);
 		}
 
 		WaitForMultipleObjects(m_nWorkNum, m_phWorkHandle, TRUE, INFINITE);
@@ -359,6 +390,35 @@ void CIOCPModel::printDegug(const char *pInfo, const int nResult, bool bFlag)
 	{
 		sprintf_s(cLog, sizeof(cLog), "%s%d;", pInfo, nResult);
 		OutputDebugStringA(cLog);
+	}
+}
+
+BOOL CIOCPModel::IsSocketAlive(const SOCKET &hSocket)
+{
+	int nBytes = send(hSocket, "", 0, 0);
+	if(-1 == nBytes)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+UINT CIOCPModel::ErrorHandle(const IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext, const DWORD &dwErr)
+{
+	//超时继续等待
+	if(WAIT_TIMEOUT == dwErr)
+	{
+		if( FALSE == IsSocketAlive(pSocketContext->m_hSocket))
+		{
+			printDegug("检测到客户端异常退出！", pSocketContext->m_hSocket);
+			
+			return IOCP_COM::NET_MSG_ERROR;
+		}
+		else
+		{
+			return IOCP_COM::NET_MSG_NOERR;
+		}
 	}
 }
 

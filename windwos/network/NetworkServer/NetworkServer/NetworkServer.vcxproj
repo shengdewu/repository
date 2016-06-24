@@ -76,6 +76,7 @@
     <ClInclude Include="ErrorCode.h" />
     <ClInclude Include="IOCPModel.h" />
     <ClInclude Include="NetworkServer.h" />
+    <ClInclude Include="PublicHeader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="IOCPModel.cpp" />
