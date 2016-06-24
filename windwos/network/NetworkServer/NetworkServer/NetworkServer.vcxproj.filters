@@ -21,6 +21,9 @@
     <ClInclude Include="IOCPModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ErrorCode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NetworkServer.cpp">
