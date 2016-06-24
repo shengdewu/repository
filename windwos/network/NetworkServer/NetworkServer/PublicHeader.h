@@ -8,7 +8,8 @@
 namespace IOCP_COM{
 
 	//退出完成端口
-#define EXIT_COMPLETE NULL
+	#define EXIT_COMPLETE NULL
+
 	enum NET_MSG{
 		NET_MSG_NONE = 0,
 		NET_MSG_NOERR = 1,
