@@ -26,7 +26,7 @@ public:
 	*@return [out]
 				设置标志，成功返回0，失败返回非0
 	*/
-	long	StartListen(const long nPort, const char *pcIp);
+	long	StartListen(const long nPort, const char *pcIp = nullptr);
 
 	/*!
 	*@name 

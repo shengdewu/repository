@@ -21,10 +21,17 @@ long CNetworkServer::StartListen(const long nPort, const char *pcIp)
 	{
 		return FALSE;
 	}
+	reinterpret_cast<CIOCPModel*>(m_pNetworkServer)->Start();
+
 	return TRUE;
 }
 
 void CNetworkServer::StopListen()
 {
+	if(nullptr == m_pNetworkServer)
+	{
+		return;
+	}
+	reinterpret_cast<CIOCPModel*>(m_pNetworkServer)->Stop();
 
 }

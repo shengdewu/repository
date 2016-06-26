@@ -1,4 +1,7 @@
 #include <process.h>
+#ifndef __RELEASE__
+#include <iostream>
+#endif
 #include "IOCPModel.h"
 #include "ErrorCode.h"
 
@@ -45,7 +48,7 @@ void CIOCPModel::UnloadSocketLib()
 }
 
 
-void CIOCPModel::ReleaseIOCP()
+void CIOCPModel::UninitCompeletionPort()
 {
 	DeleteCriticalSection(&m_arrayWinLock);
 	Release(m_hExitHandle);
@@ -69,6 +72,7 @@ void CIOCPModel::Release(void *p)
 
 long CIOCPModel::InitCompeletionPort(int nThread /* = 0 */)
 {
+	InitializeCriticalSection(&m_arrayWinLock);
 	m_hIoCompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
 	if(NULL == m_hIoCompletionPort)
 	{
@@ -88,7 +92,7 @@ long CIOCPModel::InitCompeletionPort(int nThread /* = 0 */)
 	m_hExitHandle = CreateEvent(NULL, TRUE, FALSE, NULL);
 
 	m_phWorkHandle = new HANDLE[nProcess];
-	for (int i = 0; i > m_nWorkNum; i ++)
+	for (int i = 0; i < m_nWorkNum; i ++)
 	{
 		IOCP_COM::ThreadParam_Work	*pParm = new IOCP_COM::ThreadParam_Work;
 		pParm->pThis = reinterpret_cast<void*>(this);
@@ -140,7 +144,7 @@ long CIOCPModel::InitListen(const char *pSvrIp, const int nPort)
 	if(!GetlpfnAccept(m_phListenContext->m_hSocket))
 	{
 		//释放资源
-		ReleaseIOCP();
+		UninitCompeletionPort();
 		return Net_Com::NS_ERR_GETFN;
 	}
 
@@ -210,24 +214,103 @@ DWORD CIOCPModel::_WorkThread(LPVOID lpParam)
 		switch(pClientContext->m_tOpType)
 		{
 		case IOCP_COM::ACCEPT_POSTED:
+			pThis->DoAccept(pSockContext, pClientContext);
 			break;
 		case IOCP_COM::RECV_POSTED:
+			pThis->DoRecv(pSockContext, pClientContext);
+			break;
+		case IOCP_COM::SEND_POSTED:
 			break;
 		default:
 			break;
 		}
 	}
 
+	pThis->printDebug("退出工作线程 id= ", pManage->nThreadNo);
 	delete pManage;
 	pManage = nullptr;
 
 	return 0;
 }
 
+bool CIOCPModel::DoAccept(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext, IOCP_COM::PER_IO_CONTEXT *pIoContext)
+{
+	SOCKADDR_IN* ClientAddr = NULL;
+	SOCKADDR_IN* LocalAddr = NULL;  
+	int remoteLen = sizeof(SOCKADDR_IN), localLen = sizeof(SOCKADDR_IN);  
+
+	///////////////////////////////////////////////////////////////////////////
+	// 1. 首先取得连入客户端的地址信息
+	// 这个 m_lpfnGetAcceptExSockAddrs 不得了啊~~~~~~
+	// 不但可以取得客户端和本地端的地址信息，还能顺便取出客户端发来的第一组数据，老强大了...
+	m_lpfnGetAcceptExSocketAddrs(pIoContext->m_wsaBuf.buf, pIoContext->m_wsaBuf.len - ((sizeof(SOCKADDR_IN)+16)*2),  
+		sizeof(SOCKADDR_IN)+16, sizeof(SOCKADDR_IN)+16, (LPSOCKADDR*)&LocalAddr, &localLen, (LPSOCKADDR*)&ClientAddr, &remoteLen);
+
+	printDebug("客户端:", inet_ntoa(ClientAddr->sin_addr), true);
+	printDebug(",", ntohs(ClientAddr->sin_port), true);
+	printDebug("客户端连入: 信息，", pIoContext->m_wsaBuf.buf);
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 2. 这里需要注意，这里传入的这个是ListenSocket上的Context，这个Context我们还需要用于监听下一个连接
+	// 所以我还得要将ListenSocket上的Context复制出来一份为新连入的Socket新建一个SocketContext
+	IOCP_COM::PER_SOCKET_CONTEXT *pNewSocketContext = new IOCP_COM::PER_SOCKET_CONTEXT;
+	pNewSocketContext->m_hSocket = pIoContext->m_hSocket;
+	memcpy_s(&(pNewSocketContext->m_hClientAddr), sizeof(pNewSocketContext->m_hClientAddr), ClientAddr, remoteLen);
+	// 参数设置完毕，将这个Socket和完成端口绑定(这也是一个关键步骤)
+	if(!AssociateWithIOCP(pNewSocketContext))
+	{
+		Release(pNewSocketContext);
+		return false;
+	}
+
+	// 3. 继续，建立其下的IoContext，用于在这个Socket上投递第一个Recv数据请求
+	IOCP_COM::PER_IO_CONTEXT *pNewIoContext = pNewSocketContext->GetNewIoContext();
+	pNewIoContext->m_tOpType = IOCP_COM::RECV_POSTED;
+	pNewIoContext->m_hSocket = pNewSocketContext->m_hSocket;
+	// 如果Buffer需要保留，就自己拷贝一份出来
+	//memcpy( pNewIoContext->m_szBuffer,pIoContext->m_szBuffer,MAX_BUFFER_LEN);
+	if(!PostRecv(pIoContext))
+	{
+		pNewSocketContext->RemoveIoContext(pNewIoContext);
+		return false;
+	}
+	
+	// 4. 如果投递成功，那么就把这个有效的客户端信息，加入到ContextList中去(需要统一管理，方便释放资源)
+	AddToContextList(pNewSocketContext);
+
+	// 5. 使用完毕之后，把Listen Socket的那个IoContext重置，然后准备投递新的AcceptEx
+	pIoContext->ResetBuffer();
+
+	return PostAccept(pIoContext);
+}
+
+bool CIOCPModel::DoRecv(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext, IOCP_COM::PER_IO_CONTEXT *pIoContext)
+{
+	SOCKADDR_IN *ClientAddr = &pSocketContext->m_hClientAddr;
+
+	printDebug("客户端:", inet_ntoa(ClientAddr->sin_addr), true);
+	printDebug(",", ntohs(ClientAddr->sin_port), true);
+	printDebug("客户端连入: 信息，", pIoContext->m_wsaBuf.buf);
+
+	return false;
+}
+
+bool CIOCPModel::AssociateWithIOCP(IOCP_COM::PER_SOCKET_CONTEXT *pSockContext)
+{
+	// 将用于和客户端通信的SOCKET绑定到完成端口中
+	HANDLE hTemp = CreateIoCompletionPort((HANDLE)pSockContext->m_hSocket, m_hIoCompletionPort, (DWORD)pSockContext, 0);
+
+	if(NULL == hTemp)
+	{
+		printDebug("支持绑定完成端口失败：", WSAGetLastError());
+		return false;
+	}
+
+	return true;
+}
+
 long CIOCPModel::Start(const unsigned short nPort /* = 0 */, const char *pSvrIp /* = nullptr */)
 {
-	InitializeCriticalSection(&m_arrayWinLock);
-
 	long lRet = Net_Com::NS_ERR_OK;
 	lRet = InitCompeletionPort();
 	if(Net_Com::NS_ERR_OK != lRet)
@@ -260,7 +343,7 @@ void CIOCPModel::Stop()
 	}
 
 	ClearContextList();
-	ReleaseIOCP();
+	UninitCompeletionPort();
 }
 
 bool CIOCPModel::PostAccept(IOCP_COM::PER_IO_CONTEXT *pAcceptIoContext)
@@ -299,6 +382,28 @@ bool CIOCPModel::PostAccept(IOCP_COM::PER_IO_CONTEXT *pAcceptIoContext)
 		}
 	}
 
+	return true;
+}
+
+bool CIOCPModel::PostRecv(IOCP_COM::PER_IO_CONTEXT *pIoContext)
+{
+	DWORD dwFlags = 0;
+	DWORD dwBytes = 0;
+	WSABUF *p_wbuf = &pIoContext->m_wsaBuf;
+	OVERLAPPED *p_ol = &pIoContext->m_hOverlapped;
+
+	pIoContext->ResetBuffer();
+	pIoContext->m_tOpType = IOCP_COM::RECV_POSTED;
+
+	//初始化完成后，投递wsarecv请求
+	int nBytesRecv = WSARecv(pIoContext->m_hSocket, p_wbuf, 1, &dwBytes, &dwFlags, p_ol, NULL);
+
+	//如果返回值错误，并且错误代码并非是Pending的话，那就说明这个重叠请求失败了
+	if((SOCKET_ERROR == nBytesRecv) && (WSA_IO_PENDING != WSAGetLastError()))
+	{
+		printDebug("投递第一个wsarecv失败", 0);
+		return false;
+	}
 	return true;
 }
 
@@ -431,11 +536,13 @@ void CIOCPModel::printDebug(const char *pInfo, const char *pResult, bool bFlag)
 	{
 		sprintf_s(cLog, sizeof(cLog), "%s%s\n", pInfo, pResult);
 		OutputDebugStringA(cLog);
+		std::cout << cLog << std::endl;
 	}
 	else
 	{
 		sprintf_s(cLog, sizeof(cLog), "%s%s;", pInfo, pResult);
 		OutputDebugStringA(cLog);
+		std::cout << cLog;
 	}
 }
 void CIOCPModel::printDebug(const char *pInfo, const int nResult, bool bFlag)
@@ -445,11 +552,13 @@ void CIOCPModel::printDebug(const char *pInfo, const int nResult, bool bFlag)
 	{
 		sprintf_s(cLog, sizeof(cLog), "%s%d\n", pInfo, nResult);
 		OutputDebugStringA(cLog);
+		std::cout << cLog << std::endl;
 	}
 	else
 	{
 		sprintf_s(cLog, sizeof(cLog), "%s%d;", pInfo, nResult);
 		OutputDebugStringA(cLog);
+		std::cout << cLog;
 	}
 }
 

@@ -51,7 +51,7 @@ private:
 	bool GetlpfnAccept(SOCKET &hSock);
 
 	//初始化失败后，释放资源
-	void ReleaseIOCP();
+	void UninitCompeletionPort();
 
 	//删除指针
 	void Release(void *p);
@@ -60,7 +60,7 @@ private:
 	bool PostAccept(IOCP_COM::PER_IO_CONTEXT *pAcceptIoContext);
 
 	//投递Recv请求
-	bool PostRecv();
+	bool PostRecv(IOCP_COM::PER_IO_CONTEXT *pIoContext);
 
 	//清除客户端列表
 	void ClearContextList(void);
@@ -71,10 +71,14 @@ private:
 	//删除客户端信息
 	void RemoveContext(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext);
 
-	bool DoAccept();
+	//绑定到完成端口
+	bool AssociateWithIOCP(IOCP_COM::PER_SOCKET_CONTEXT *pSockContext);
 
-	//
-	bool DoRecv();
+	//连接请求
+	bool DoAccept(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext, IOCP_COM::PER_IO_CONTEXT *pIoContext);
+
+	//接收请求
+	bool DoRecv(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext, IOCP_COM::PER_IO_CONTEXT *pIoContext);
 
 	//网络错误处理
 	UINT ErrorHandle(const IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext, const DWORD &dwErr);
