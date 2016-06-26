@@ -18,7 +18,7 @@ CIOCPModel::CIOCPModel(void):
 }
 
 
-CIOCPModel::~CIOCPModel(void)
+CIOCPModel::~CIOCPModel()
 {
 	UnloadSocketLib();
 }
@@ -44,17 +44,6 @@ void CIOCPModel::UnloadSocketLib()
 	WSACleanup();
 }
 
-void CIOCPModel::ClearContextList()
-{
-	IOCP_COM::CSynLock	L(&m_arrayWinLock);
-	std::vector<IOCP_COM::PER_SOCKET_CONTEXT*>::iterator it = m_arrayClientContext.begin();
-	for(; it != m_arrayClientContext.end(); it ++)
-	{
-		Release(*it);
-	}
-
-	m_arrayClientContext.clear();
-}
 
 void CIOCPModel::ReleaseIOCP()
 {
@@ -77,6 +66,7 @@ void CIOCPModel::Release(void *p)
 
 	delete p;
 }
+
 long CIOCPModel::InitCompeletionPort(int nThread /* = 0 */)
 {
 	m_hIoCompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
@@ -118,12 +108,12 @@ long CIOCPModel::InitListen(const char *pSvrIp, const int nPort)
 	m_phListenContext = new IOCP_COM::PER_SOCKET_CONTEXT;
 	m_phListenContext->m_hSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 	
-	printDegug("服务器socket = ", m_phListenContext->m_hSocket);
+	printDebug("服务器socket = ", m_phListenContext->m_hSocket);
 
 	//绑定到完成端口
 	if(NULL == CreateIoCompletionPort((HANDLE)m_phListenContext->m_hSocket, m_hIoCompletionPort, (DWORD)m_phListenContext, 0))
 	{
-		printDegug("绑定完成端口失败， 错误码 = ", WSAGetLastError());
+		printDebug("绑定完成端口失败， 错误码 = ", WSAGetLastError());
 		return Net_Com::NS_ERR_BIND_IOCP;
 	}
 
@@ -136,13 +126,13 @@ long CIOCPModel::InitListen(const char *pSvrIp, const int nPort)
 
 	if(SOCKET_ERROR == bind(m_phListenContext->m_hSocket, (sockaddr*)(&stuServerAddr), sizeof(stuServerAddr)))
 	{
-		printDegug("绑定套接字失败， 错误码 = ", WSAGetLastError());
+		printDebug("绑定套接字失败， 错误码 = ", WSAGetLastError());
 		return Net_Com::NS_ERR_BIND;
 	}
 
 	if(SOCKET_ERROR == listen(m_phListenContext->m_hSocket, SOMAXCONN))
 	{
-		printDegug("监听失败， 错误码 = ", WSAGetLastError());
+		printDebug("监听失败， 错误码 = ", WSAGetLastError());
 		return Net_Com::NS_ERR_LISTEN;
 	}
 
@@ -160,12 +150,12 @@ long CIOCPModel::InitListen(const char *pSvrIp, const int nPort)
 		if(!PostAccept(pAcceptIoContext))
 		{
 			m_phListenContext->RemoveIoContext(pAcceptIoContext);
-			printDegug("投递 AcceptEx 失败，错误码 = ", WSAGetLastError());
+			printDebug("投递 AcceptEx 失败，错误码 = ", WSAGetLastError());
 			return Net_Com::NS_ERR_POST_ACCEPT;
 		}
 	}
 
-	printDegug("初始化监听完成：",0);
+	printDebug("初始化监听完成：",0);
 	return Net_Com::NS_ERR_OK;
 }
 
@@ -175,29 +165,47 @@ DWORD CIOCPModel::_WorkThread(LPVOID lpParam)
 	CIOCPModel *pThis = reinterpret_cast<CIOCPModel*>(pManage->pThis);
 
 	DWORD	nReceiveNumber = 0;
-	IOCP_COM::PER_SOCKET_CONTEXT *pListenContext = nullptr;
+	IOCP_COM::PER_SOCKET_CONTEXT *pSockContext = nullptr;
 	IOCP_COM::PER_IO_CONTEXT	 *pClientContext = nullptr;
 	OVERLAPPED					 *pOverlapped = nullptr;
 
 	while(WAIT_OBJECT_0 != WaitForSingleObject(pThis->m_hExitHandle, IOCP_COM::Milliseconds_ZERO))
 	{
 		
-		BOOL bReturn = GetQueuedCompletionStatus(pThis->m_hIoCompletionPort, &nReceiveNumber, 
-					reinterpret_cast<PULONG_PTR>(&pListenContext), &pOverlapped, INFINITE);
+		BOOL bReturn = GetQueuedCompletionStatus(pThis->m_hIoCompletionPort, 
+												 &nReceiveNumber, 
+												reinterpret_cast<PULONG_PTR>(&pSockContext), 
+												&pOverlapped, 
+												INFINITE);
 
-		if(EXIT_COMPLETE == (DWORD)pListenContext)
+		if(EXIT_COMPLETE == (DWORD)pSockContext)
 		{
 			break;
 		}
 
 		if(FALSE == bReturn)
 		{
-
+			DWORD nErr = GetLastError();
+			UINT nRet = pThis->ErrorHandle(pSockContext,nErr);
+			if(IOCP_COM::NET_MSG_ERROR == nRet)
+			{
+				break;
+			}
 			continue;
 		}
 
 		pClientContext = nullptr;
 		pClientContext = CONTAINING_RECORD(pOverlapped, IOCP_COM::PER_IO_CONTEXT, m_hOverlapped);
+
+		if(0 == nReceiveNumber && (
+			IOCP_COM::RECV_POSTED == pClientContext->m_tOpType || IOCP_COM::SEND_POSTED == pClientContext->m_tOpType))
+		{
+			pThis->printDebug("客服端 : ", inet_ntoa(pSockContext->m_hClientAddr.sin_addr), true);
+			pThis->printDebug("，端口 : ", ntohs(pSockContext->m_hClientAddr.sin_port), true);
+			pThis->printDebug(",断开连接... : ", 0);
+			pThis->RemoveContext(pSockContext);
+			continue;	
+		}
 
 		switch(pClientContext->m_tOpType)
 		{
@@ -270,14 +278,14 @@ bool CIOCPModel::PostAccept(IOCP_COM::PER_IO_CONTEXT *pAcceptIoContext)
 
 	//为以后的新连入的客户端准备套接字，这是与传统的accept最大的差别
 	pAcceptIoContext->m_hSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
-	printDegug("新连入套接字 nIndex = ", CIOCPModel::snClient_Count, true);
-	printDegug("Socket = ", pAcceptIoContext->m_hSocket);
+	printDebug("新连入套接字 nIndex = ", CIOCPModel::snClient_Count, true);
+	printDebug("Socket = ", pAcceptIoContext->m_hSocket);
 
 	CIOCPModel::snClient_Count ++;
 
 	if(INVALID_SOCKET == pAcceptIoContext->m_hSocket)
 	{
-		printDegug("创建用于AcceptEx的套接字失败，错误码 : ", WSAGetLastError());
+		printDebug("创建用于AcceptEx的套接字失败，错误码 : ", WSAGetLastError());
 		return false;
 	}
 
@@ -293,6 +301,44 @@ bool CIOCPModel::PostAccept(IOCP_COM::PER_IO_CONTEXT *pAcceptIoContext)
 
 	return true;
 }
+
+void CIOCPModel::AddToContextList(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext )
+{
+	IOCP_COM::CSynLock	L(&m_arrayWinLock);
+
+	m_arrayClientContext.push_back(pSocketContext);	
+}
+
+////////////////////////////////////////////////////////////////
+//	移除某个特定的Context
+void CIOCPModel::RemoveContext(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext )
+{
+	IOCP_COM::CSynLock	L(&m_arrayWinLock);
+
+	std::vector<IOCP_COM::PER_SOCKET_CONTEXT*>::iterator it = m_arrayClientContext.begin();
+	for(; it != m_arrayClientContext.end(); it ++)
+	{
+		if( pSocketContext == *it)
+		{
+			Release(*it);			
+			it = m_arrayClientContext.erase(it);			
+			break;
+		}
+	}
+}
+
+void CIOCPModel::ClearContextList()
+{
+	IOCP_COM::CSynLock	L(&m_arrayWinLock);
+	std::vector<IOCP_COM::PER_SOCKET_CONTEXT*>::iterator it = m_arrayClientContext.begin();
+	for(; it != m_arrayClientContext.end(); it ++)
+	{
+		Release(*it);
+	}
+
+	m_arrayClientContext.clear();
+}
+
 /*====================================================
 				辅助函数：
 ====================================================*/
@@ -331,7 +377,7 @@ bool CIOCPModel::GetlpfnAccept(SOCKET &hSock)
 {
 	if(INVALID_SOCKET == hSock)
 	{
-		printDegug("WSAIoctl 未能获取AcceptEx函数指针。套接字无效",0); 
+		printDebug("WSAIoctl 未能获取AcceptEx函数指针。套接字无效",0); 
 		return false;
 	}
 
@@ -354,7 +400,7 @@ bool CIOCPModel::GetlpfnAccept(SOCKET &hSock)
 		NULL, 
 		NULL))  
 	{  
-		printDegug("WSAIoctl 未能获取AcceptEx函数指针。错误代码 = ", WSAGetLastError()); 
+		printDebug("WSAIoctl 未能获取AcceptEx函数指针。错误代码 = ", WSAGetLastError()); 
 		
 		return false;  
 	}  
@@ -371,14 +417,28 @@ bool CIOCPModel::GetlpfnAccept(SOCKET &hSock)
 		NULL, 
 		NULL))  
 	{  
-		printDegug("WSAIoctl 未能获取GetAcceptExSocketAddrs函数指针。错误代码 = ", WSAGetLastError());  
+		printDebug("WSAIoctl 未能获取GetAcceptExSocketAddrs函数指针。错误代码 = ", WSAGetLastError());  
 		return false; 
 	}  
 
 	return true;
 }
 
-void CIOCPModel::printDegug(const char *pInfo, const int nResult, bool bFlag)
+void CIOCPModel::printDebug(const char *pInfo, const char *pResult, bool bFlag)
+{
+	char cLog[1024] = {'\0'};
+	if(!bFlag)
+	{
+		sprintf_s(cLog, sizeof(cLog), "%s%s\n", pInfo, pResult);
+		OutputDebugStringA(cLog);
+	}
+	else
+	{
+		sprintf_s(cLog, sizeof(cLog), "%s%s;", pInfo, pResult);
+		OutputDebugStringA(cLog);
+	}
+}
+void CIOCPModel::printDebug(const char *pInfo, const int nResult, bool bFlag)
 {
 	char cLog[1024] = {'\0'};
 	if(!bFlag)
@@ -409,17 +469,35 @@ UINT CIOCPModel::ErrorHandle(const IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext,
 	//超时继续等待
 	if(WAIT_TIMEOUT == dwErr)
 	{
+		//确认客户端还活着
 		if( FALSE == IsSocketAlive(pSocketContext->m_hSocket))
 		{
-			printDegug("检测到客户端异常退出！", pSocketContext->m_hSocket);
+			printDebug("检测到客户端异常退出！", pSocketContext->m_hSocket);
 			
-			return IOCP_COM::NET_MSG_ERROR;
+			return IOCP_COM::NET_MSG_DISCONNECT;
 		}
 		else
 		{
-			return IOCP_COM::NET_MSG_NOERR;
+			printDebug("检测到网络超时！，重试中。。。", pSocketContext->m_hSocket);
+
+			return IOCP_COM::NET_MSG_WAITTIME;
 		}
 	}
+
+	//客户端异常退出
+	else if(ERROR_NETNAME_DELETED == dwErr)
+	{
+		printDebug("检测到客户端异常退出！", pSocketContext->m_hSocket);
+
+		return IOCP_COM::NET_MSG_DISCONNECT;
+	}
+	else
+	{
+		printDebug("完成端口出现错误，线程退出！", pSocketContext->m_hSocket);
+
+		return IOCP_COM::NET_MSG_ERROR;
+	}
+	
 }
 
 

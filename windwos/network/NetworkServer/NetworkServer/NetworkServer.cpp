@@ -10,7 +10,8 @@ CNetworkServer::CNetworkServer(void):
 
 CNetworkServer::~CNetworkServer(void)
 {
-	delete m_pNetworkServer;
+
+	delete reinterpret_cast<CIOCPModel*>(m_pNetworkServer);
 }
 
 

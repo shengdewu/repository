@@ -16,6 +16,7 @@ namespace IOCP_COM{
 		NET_MSG_CONNECT,
 		NET_MSG_DISCONNECT,
 		NET_MSG_ERROR,
+		NET_MSG_WAITTIME,
 	};
 	//完成端口常数
 	enum COM_CONST{

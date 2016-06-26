@@ -1,11 +1,14 @@
 #pragma once
 
+#ifdef _THIS_IS_DLL
 #ifdef NETWORKSERVER_EXPORTS
 #define NETWORKSERVER_API __declspec(dllexport)
 #else
 #define NETWORKSERVER_API __declspec(dllimport)
 #endif
-
+#else
+#define NETWORKSERVER_API
+#endif
 
 class NETWORKSERVER_API CNetworkServer
 {

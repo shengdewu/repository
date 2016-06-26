@@ -45,8 +45,8 @@ private:
 	static DWORD __stdcall _WorkThread(LPVOID lpParam);
 
 	//日志
-	void printDegug(const char *pInfo, const int nResult, bool bFlag = false);
-
+	void printDebug(const char *pInfo, const int nResult, bool bFlag = false);
+	void printDebug(const char *pInfo, const char *pResult, bool bFlag = false);
 	//获取AcceptEx和GetAcceptExSockaddrs函数指针
 	bool GetlpfnAccept(SOCKET &hSock);
 
@@ -64,6 +64,12 @@ private:
 
 	//清除客户端列表
 	void ClearContextList(void);
+
+	//增加客户端信息
+	void AddToContextList(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext);
+
+	//删除客户端信息
+	void RemoveContext(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext);
 
 	bool DoAccept();
 
