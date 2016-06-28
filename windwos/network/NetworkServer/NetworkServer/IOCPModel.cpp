@@ -372,7 +372,6 @@ void CIOCPModel::Stop()
 
 bool CIOCPModel::PostAccept(IOCP_COM::PER_IO_CONTEXT *pAcceptIoContext)
 {
-	//套接字必须是无效的
 	if(INVALID_SOCKET == m_phListenContext->m_hSocket ||
 		NULL == m_lpfnAcceptEx)
 	{
@@ -384,7 +383,7 @@ bool CIOCPModel::PostAccept(IOCP_COM::PER_IO_CONTEXT *pAcceptIoContext)
 	OVERLAPPED	*p_ol = &pAcceptIoContext->m_hOverlapped;
 
 	//为以后的新连入的客户端准备套接字，这是与传统的accept最大的差别
-	pAcceptIoContext->m_hSockAccept = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
+	pAcceptIoContext->m_hSockAccept = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 	
 	char cLog[1024] = {'\0'};
 	sprintf_s(cLog, sizeof(cLog), "新连入套接字:ndex=%d,socket=%d\n", CIOCPModel::snClient_Count, pAcceptIoContext->m_hSockAccept);
