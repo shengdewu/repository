@@ -63,7 +63,7 @@ namespace IOCP_COM{
 		OVERLAPPED	m_hOverlapped;  //每个重叠网络操作的重叠结构，针对每个socket，都必须要又一个
 		WSABUF		m_wsaBuf;       //WSA类型的缓冲区，用于给重叠结构传参数
 		char		m_szBuffer[MAX_BUFFER_LEN]; //WSABUF 具体的缓冲区
-		SOCKET		m_hSocket;      //网络操作所用的
+		SOCKET		m_hSockAccept;      //网络操作所用的
 		OPERATION_TYPE	m_tOpType;  //此重叠结构操作类型
 
 		//初始化
@@ -71,7 +71,7 @@ namespace IOCP_COM{
 		{
 			ZeroMemory(&m_hOverlapped, sizeof(m_hOverlapped));
 			ZeroMemory(m_szBuffer, MAX_BUFFER_LEN);
-			m_hSocket = INVALID_SOCKET;
+			m_hSockAccept = INVALID_SOCKET;
 			m_wsaBuf.buf = m_szBuffer;
 			m_wsaBuf.len = MAX_BUFFER_LEN;
 			m_tOpType =  NULL_POSTED;
@@ -80,10 +80,10 @@ namespace IOCP_COM{
 		//释放
 		~_tagPER_IO_CONTEXT()
 		{
-			if(INVALID_SOCKET != m_hSocket)
+			if(INVALID_SOCKET != m_hSockAccept)
 			{
-				closesocket(m_hSocket);
-				m_hSocket = INVALID_SOCKET;
+				closesocket(m_hSockAccept);
+				m_hSockAccept = INVALID_SOCKET;
 			}
 		}
 

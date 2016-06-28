@@ -9,6 +9,7 @@ namespace Net_Com{
 		NS_ERR_LISTEN,
 		NS_ERR_GETFN,
 		NS_ERR_POST_ACCEPT,
+		NS_ERR_ACCEPT,
 	};
 
 }

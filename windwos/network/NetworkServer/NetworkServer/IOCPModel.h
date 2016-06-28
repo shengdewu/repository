@@ -53,9 +53,6 @@ private:
 	//初始化失败后，释放资源
 	void UninitCompeletionPort();
 
-	//删除指针
-	void Release(void *p);
-
 	//投递AcceptEx请求
 	bool PostAccept(IOCP_COM::PER_IO_CONTEXT *pAcceptIoContext);
 
