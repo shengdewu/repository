@@ -185,14 +185,12 @@ DWORD CIOCPModel::_WorkThread(LPVOID lpParam)
 
 	while(WAIT_OBJECT_0 != WaitForSingleObject(pThis->m_hExitHandle, IOCP_COM::Milliseconds_ZERO))
 	{
-		
-		pThis->printDebug("工作者线程，SLEEP:",nThreadNo);
 		BOOL bReturn = GetQueuedCompletionStatus(pThis->m_hIoCompletionPort, 
 												 &dwBytesTransfered, 
 												(PULONG_PTR)(&pSockContext), 
 												&pOverlapped, 
 												INFINITE);
-		pThis->printDebug("工作者线程，WAKEUP:",nThreadNo);
+
 		if(EXIT_COMPLETE == (DWORD)pSockContext)
 		{
 			break;
@@ -316,8 +314,10 @@ bool CIOCPModel::DoRecv(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext, IOCP_COM::
 	//OutputDebugStringA(cLog);
 	std::cout << cLog << std::endl;
 
-	return false;
+	// 然后开始投递下一个WSARecv请求
+	return PostRecv(pIoContext);  //important
 }
+
 
 bool CIOCPModel::AssociateWithIOCP(IOCP_COM::PER_SOCKET_CONTEXT *pSockContext)
 {
