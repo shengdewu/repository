@@ -91,6 +91,11 @@ namespace IOCP_COM{
 		{
 			ZeroMemory(m_szBuffer, MAX_BUFFER_LEN);
 		}
+
+		long GetBufferSize(void)
+		{
+			return MAX_BUFFER_LEN;
+		}
 	}PER_IO_CONTEXT;
 
 	//单句柄，即每个完成端口的参数，也是每个sock的参数

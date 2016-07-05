@@ -12,4 +12,30 @@ namespace Net_Com{
 		NS_ERR_ACCEPT,
 	};
 
+	typedef struct _MsgData{
+		int		nMsgType;
+		int     nMsgCmd;
+		void	*cMsgContent;
+		int     nMsgSize;
+
+		_MsgData()
+		{
+			nMsgType = 0;
+			nMsgCmd = 0;
+			cMsgContent = nullptr;
+			nMsgSize = 0;
+		}
+	}MsgData;
+
+	typedef int(*pMsgCallBack)(const MsgData &msg, void *pContext);
+
+	class CAbsMsgCallback{
+	public:
+		CAbsMsgCallback(void *pContext);
+		virtual ~CAbsMsgCallback();
+		virtual long notify_msg(const MsgData &msg, void *pContext) = 0;
+
+	protected:
+		void *m_pContext;
+	};
 }

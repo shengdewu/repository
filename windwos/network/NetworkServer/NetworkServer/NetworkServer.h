@@ -36,6 +36,8 @@ public:
 	*/
 	void	StopListen(void);
 
+	long    SendData(const char *pData, const int nSize);
+
 private:
 	void		*m_pNetworkServer;
 };

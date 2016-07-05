@@ -21,7 +21,7 @@ long CNetworkServer::StartListen(const long nPort, const char *pcIp)
 	{
 		return FALSE;
 	}
-	reinterpret_cast<CIOCPModel*>(m_pNetworkServer)->Start();
+	reinterpret_cast<CIOCPModel*>(m_pNetworkServer)->Start(nPort, pcIp);
 
 	return TRUE;
 }
@@ -34,4 +34,14 @@ void CNetworkServer::StopListen()
 	}
 	reinterpret_cast<CIOCPModel*>(m_pNetworkServer)->Stop();
 
+}
+
+long CNetworkServer::SendData(const char *pData, const int nSize)
+{
+	if(nullptr == m_pNetworkServer)
+	{
+		return 0;
+	}
+
+	return reinterpret_cast<CIOCPModel*>(m_pNetworkServer)->SendData(NULL ,pData, nSize);
 }

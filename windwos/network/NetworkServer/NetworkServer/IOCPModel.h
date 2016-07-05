@@ -15,6 +15,14 @@ public:
 
 	//停止监听
 	void Stop();
+
+	//发送数据
+	//s 客户端套接字
+	//pData 需要发送的数据
+	//nSize 发送数据的长度
+	//返回发送的字节数
+	long SendData(SOCKET s, const char * pData, const long nSize);
+
 private:
 	
 	//初始化网络库,在开始网络初始化之前必须调用，构造函数里已经调用
@@ -59,6 +67,9 @@ private:
 	//投递Recv请求
 	bool PostRecv(IOCP_COM::PER_IO_CONTEXT *pIoContext);
 
+	//投递发送请求
+	bool PostSend(IOCP_COM::PER_IO_CONTEXT *pIoContext);
+
 	//清除客户端列表
 	void ClearContextList(void);
 
@@ -76,6 +87,9 @@ private:
 
 	//接收请求
 	bool DoRecv(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext, IOCP_COM::PER_IO_CONTEXT *pIoContext);
+
+	//发送请求
+	bool DoSend(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext, IOCP_COM::PER_IO_CONTEXT *pIoContext, DWORD dwTransferByte);
 
 	//网络错误处理
 	UINT ErrorHandle(const IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext, const DWORD &dwErr);
@@ -121,5 +135,6 @@ private:
 
 	//客户端连入个数
 	static long	snClient_Count;
+
 };
 

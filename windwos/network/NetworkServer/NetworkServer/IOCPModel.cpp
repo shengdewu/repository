@@ -7,6 +7,7 @@
 
 long CIOCPModel::snClient_Count = 0;
 
+
 CIOCPModel::CIOCPModel(void):
 	m_phListenContext(NULL),
 	m_hIoCompletionPort(NULL),
@@ -230,6 +231,7 @@ DWORD CIOCPModel::_WorkThread(LPVOID lpParam)
 			pThis->DoRecv(pSockContext, pIoContext);
 			break;
 		case IOCP_COM::SEND_POSTED:
+			pThis->DoSend(pSockContext, pIoContext, dwBytesTransfered);
 			break;
 		default:
 			pThis->printDebug("_WorkThread中的 pIoContext->m_OpType 参数异常.", 0);
@@ -318,6 +320,18 @@ bool CIOCPModel::DoRecv(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext, IOCP_COM::
 	return PostRecv(pIoContext);  //important
 }
 
+bool CIOCPModel::DoSend(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext, IOCP_COM::PER_IO_CONTEXT *pIoContext, DWORD dwTransferByte)
+{
+	SOCKADDR_IN *ClientAddr = &pSocketContext->m_hClientAddr;
+
+	char cLog[1024] = {'\0'};
+
+	sprintf_s(cLog, sizeof(cLog), "DoSend:%s,%d:%s\n", inet_ntoa(ClientAddr->sin_addr), ntohs(ClientAddr->sin_port),pIoContext->m_wsaBuf.buf);
+	//OutputDebugStringA(cLog);
+	std::cout << cLog << std::endl;	
+
+	return true;
+}
 
 bool CIOCPModel::AssociateWithIOCP(IOCP_COM::PER_SOCKET_CONTEXT *pSockContext)
 {
@@ -433,6 +447,31 @@ bool CIOCPModel::PostRecv(IOCP_COM::PER_IO_CONTEXT *pIoContext)
 	return true;
 }
 
+bool CIOCPModel::PostSend(IOCP_COM::PER_IO_CONTEXT *pIoContext)
+{
+	WSABUF *p_wbuf = &pIoContext->m_wsaBuf;
+	DWORD dwSendBytes = 0, dwFlag = 0;
+	OVERLAPPED	*p_ol = &pIoContext->m_hOverlapped;
+	pIoContext->m_tOpType = IOCP_COM::SEND_POSTED;
+
+	int nRecBytes = WSASend(pIoContext->m_hSockAccept,
+							p_wbuf,
+							1,
+							&dwSendBytes,
+							dwFlag,
+							p_ol,
+							NULL);
+
+	if(SOCKET_ERROR == nRecBytes)
+	{
+		printDebug("Post Send:", WSAGetLastError());
+		return false;
+	}
+
+	return true;
+
+}
+
 void CIOCPModel::AddToContextList(IOCP_COM::PER_SOCKET_CONTEXT *pSocketContext )
 {
 	IOCP_COM::CSynLock	L(&m_arrayWinLock);
@@ -470,6 +509,42 @@ void CIOCPModel::ClearContextList()
 	}
 
 	m_arrayClientContext.clear();
+}
+
+long CIOCPModel::SendData(SOCKET s, const char * pData, const long nSize)
+{
+	IOCP_COM::PER_IO_CONTEXT *pIoContext = new IOCP_COM::PER_IO_CONTEXT;
+	{
+		IOCP_COM::CSynLock L(&m_arrayWinLock);
+		std::vector<IOCP_COM::PER_SOCKET_CONTEXT*>::iterator it = m_arrayClientContext.begin();
+		if(m_arrayClientContext.end() == it)
+		{
+			return -1;
+		}
+		
+
+
+		std::vector<IOCP_COM::PER_IO_CONTEXT*>::iterator io_iter = (*it)->m_arrayIoContext.begin();
+		if((*it)->m_arrayIoContext.end() == io_iter)
+		{
+			return -1;
+		}
+	
+		pIoContext->m_hSockAccept = (*io_iter)->m_hSockAccept;
+	}
+	
+
+	pIoContext->ResetBuffer();
+	pIoContext->m_tOpType = IOCP_COM::SEND_POSTED;
+
+	memcpy_s(pIoContext->m_wsaBuf.buf, pIoContext->m_wsaBuf.len, pData, nSize);
+	pIoContext->m_wsaBuf.len = nSize;
+
+	PostSend(pIoContext);
+
+	delete pIoContext;
+
+	return 0;
 }
 
 /*====================================================
