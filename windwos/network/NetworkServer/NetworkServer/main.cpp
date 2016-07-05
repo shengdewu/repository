@@ -10,7 +10,7 @@ void ProcessListen(CNetworkServer *pServer)
 	if(!bListen)
 	{
 		bListen = true;
-		pServer->StartListen(12345, "25.30.9.3");
+		pServer->StartListen(12340);
 		std::cout << "listen..." << std::endl;
 	}
 	else

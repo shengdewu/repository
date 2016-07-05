@@ -449,9 +449,9 @@ bool CIOCPModel::PostRecv(IOCP_COM::PER_IO_CONTEXT *pIoContext)
 
 bool CIOCPModel::PostSend(IOCP_COM::PER_IO_CONTEXT *pIoContext)
 {
-	WSABUF *p_wbuf = &pIoContext->m_wsaBuf;
+	WSABUF *p_wbuf = &(pIoContext->m_wsaBuf);
 	DWORD dwSendBytes = 0, dwFlag = 0;
-	OVERLAPPED	*p_ol = &pIoContext->m_hOverlapped;
+	OVERLAPPED	*p_ol = &(pIoContext->m_hOverlapped);
 	pIoContext->m_tOpType = IOCP_COM::SEND_POSTED;
 
 	int nRecBytes = WSASend(pIoContext->m_hSockAccept,
@@ -461,6 +461,8 @@ bool CIOCPModel::PostSend(IOCP_COM::PER_IO_CONTEXT *pIoContext)
 							dwFlag,
 							p_ol,
 							NULL);
+
+	std::cout << "postsend byte = " <<dwSendBytes << std::endl;
 
 	if(SOCKET_ERROR == nRecBytes)
 	{
@@ -542,7 +544,10 @@ long CIOCPModel::SendData(SOCKET s, const char * pData, const long nSize)
 
 	PostSend(pIoContext);
 
-	delete pIoContext;
+	//不能删除，否则完成端口线程报错，
+	//增加发生列表，管理发送内存单元的资源
+	//
+	//delete pIoContext;
 
 	return 0;
 }
