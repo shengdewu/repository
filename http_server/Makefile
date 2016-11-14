@@ -10,6 +10,11 @@ CPPFLAGS += $(CCFLAGS)
 ###########################
 # all .cpp src
 # #########################
+SOCK_SRC = ./socket
+POLL_SRC = ./event
+EVENT_SRC = ./event
+TEST_SRC = ./test
+
 SOCK_CPP = SocketImp.cpp
 SOCK_CPP := $(addprefix ./socket/, $(SOCK_CPP))
 
@@ -44,11 +49,10 @@ $(NAME): $(OBJ)
 .SUFFIXES : .cpp
 
 .cpp.o:
-	$(CPP) $(CPPFLAGS) $(INCLUDE) -c $<
+	$(CPP) -c -o $*.o $(CPPFLAGS) $(INCLUDE) $*.cpp
 
 
 
 .PYTHON : clean
 clean:
-	-rm -rf *.o test
-
+	rm -f $(CPPFILES:.cpp=.o) $(NAME)

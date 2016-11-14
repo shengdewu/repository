@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 			{
 				int cfd = server.Accept(lfd);
 				Event ev(cfd, EventConst::EVENT_ADD, EPOLLIN);
-				p.Update(ev);
+				p.Update(&ev);
 			}
 			else
 			{
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 				if(num == 0)
 				{
 					Event ev(elist[i].Getfd(), EventConst::EVENT_DEL);
-					p.Update(ev);
+					p.Update(&ev);
 				}
 				else
 				{
