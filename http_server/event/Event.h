@@ -14,6 +14,7 @@ class Event
 {
 public:
 	Event(int fd = 0, int opt = 0, int event = 0);
+	Event(const Event &ev);
 	~Event();
 	Event & operator = (const Event &ev);
 	int Fill(int fd, int opt, int event);

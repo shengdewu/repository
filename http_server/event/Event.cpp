@@ -8,6 +8,13 @@ Event::Event(int fd, int opt, int event):
 {
 }
 
+Event::Event(const Event &ev)
+{
+	m_fd = ev.m_fd;
+	m_opt = ev.m_opt;
+	m_event = ev.m_event;
+}
+
 Event::~Event()
 {
 

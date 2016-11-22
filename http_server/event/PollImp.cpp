@@ -23,12 +23,12 @@ bool PollImp::IsAvaild()
 
 int PollImp::Init(const int max)
 {
-	if(!IsAvaild())
+	if(IsAvaild())
 	{
-		return POLL_ERR;
+	   return m_fd;
 	}
 
-	int num = (0 == max) ? MAX_EVENT : (max > MAX_EVENT ? MAX_EVENT : max);
+	int num =((0 == max) ? MAX_EVENT : (max > MAX_EVENT ? MAX_EVENT : max));
 	m_fd = epoll_create(num);
 
 	return m_fd;
@@ -41,12 +41,14 @@ int PollImp::Poll(int timeout, EvList &evl)
 		return POLL_ERR;
 	}
 	int num = epoll_wait(m_fd, &*(m_EpList.begin()), m_EpList.size(), timeout);
-	if(num < 0 )
+	if(num <= 0 )
 		return POLL_ERR; 
 
 	for(int i=0; i<num; i++)
 	{
-		Event ev(m_EpList[i].data.fd, 0, m_EpList[i].events);
+		Event *pEv = reinterpret_cast<Event*>(m_EpList[i].data.ptr);
+		pEv->SetEvent(m_EpList[i].events);
+		Event ev(*pEv);
 		evl.push_back(ev);
 	}	
 
