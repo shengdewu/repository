@@ -1,6 +1,7 @@
 #include "PollImp.h"
 #include <strings.h>
 #include <unistd.h>
+#include <iostream>
 
 PollImp::PollImp():
 	MAX_EVENT(1024),
@@ -41,7 +42,7 @@ int PollImp::Poll(int timeout, EvList &evl)
 		return POLL_ERR;
 	}
 	int num = epoll_wait(m_fd, &*(m_EpList.begin()), m_EpList.size(), timeout);
-	if(num <= 0 )
+	if(POLL_ERR == num)
 		return POLL_ERR; 
 
 	for(int i=0; i<num; i++)
