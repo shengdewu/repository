@@ -91,5 +91,5 @@ public:
 		return 0;
 	}
 private:
-	ctestpoll(){};
+	TestPoll(){};
 };
