@@ -4,8 +4,8 @@
 #include "Exception.h"
 
 Condition::Condition(bool autoRest):
-	_auto(autoRest),
-	_state(false)
+	_state(false),
+	_auto(autoRest)
 {
 	std::memset(&_cond, 0, sizeof(_cond));
 	std::memset(&_mutex, 0, sizeof(_mutex));

@@ -89,6 +89,7 @@ void *Thread::runableEntry(void *pT)
 
 	pData->pRunableTarget = nullptr;
 
+	pThread->_cond.notifyAll();
 	return nullptr;
 }
 

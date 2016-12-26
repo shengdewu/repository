@@ -1,6 +1,7 @@
 #include <iostream>
 #include "Thread.h"
 #include "Condition.h"
+#include "Runable.h"
 
 class MyRunable : public Runable
 {
@@ -47,7 +48,7 @@ int main(int argc, char *argv[])
 	while(!r.isRun());
 	r.notify();
 	thread.join();
-	while(!thread.isRunning());
+	while(thread.isRunning());
 	std::cout << "MyRunable's cnt = " << r.getCnt() << std::endl;
 	return 0;
 }

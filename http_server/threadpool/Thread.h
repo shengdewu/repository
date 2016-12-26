@@ -3,7 +3,7 @@
 #include "AutoPtr.h"
 #include "Runable.h"
 #include "Condition.h"
-#include <memory>
+#include <tr1/memory>
 
 class Thread
 {

@@ -1,10 +1,11 @@
 CPP = g++
 
-NAME = TEST_POLL
+NAME = SAMPLE
 
 CCFLAGS = -g -Wall
 CPPFLAGS = -std=c++11
 CPPFLAGS += $(CCFLAGS)
+THREADFLAGS = -lpthread
 
 
 ###########################
@@ -13,7 +14,11 @@ CPPFLAGS += $(CCFLAGS)
 SOCK_SRC = ./socket
 POLL_SRC = ./event
 EVENT_SRC = ./event
-TEST_SRC = ./test
+SAMPLE_SRC = ./sample
+COMMON_SRC = ./common
+EXCEPTION_SRC = ./exception
+THREADPOOL_SRC = ./threadpool
+MUTEX_SRC = ./mutex
 
 SOCK_CPP = SocketImp.cpp
 SOCK_CPP := $(addprefix ./socket/, $(SOCK_CPP))
@@ -24,16 +29,37 @@ POLL_CPP := $(addprefix ./event/, $(POLL_CPP))
 EVENT_CPP = Event.cpp
 EVENT_CPP := $(addprefix ./event/, $(EVENT_CPP))
 
-TEST_CPP = testpoll.cpp
-TEST_CPP := $(addprefix ./test/, $(TEST_CPP))
+EXCEPTION_CPP = Exception.cpp
+EXCEPTION_CPP := $(addprefix ./exception/, $(EXCEPTION_CPP))
 
-CPPFILES = $(TEST_CPP)
+THREAD_CPP = Thread.cpp
+THREAD_CPP := $(addprefix ./threadpool/, $(THREAD_CPP))
+
+THREADPOOL_CPP = ThreadPool.cpp
+THREADPOOL_CPP := $(addprefix ./threadpool/, $(THREADPOOL_CPP))
+
+CONDITION_CPP = Condition.cpp
+CONDITION_CPP := $(addprefix $(MUTEX_SRC)/, $(CONDITION_CPP))
+
+MUTEXLOCK_CPP = MutexLock.cpp
+MUTEXLOCK_CPP := $(addprefix $(MUTEX_SRC)/, $(MUTEXLOCK_CPP))
+
+SCOPEMUTEXLOCK_CPP = ScopeMutexLock.cpp
+SCOPEMUTEXLOCK_CPP := $(addprefix $(MUTEX_SRC)/, $(SCOPEMUTEXLOCK_CPP))
+
+SAMPLE_CPP = TestThread.cpp
+SAMPLE_CPP := $(addprefix ./sample/, $(SAMPLE_CPP))
+
+CPPFILES = $(SAMPLE_CPP)
 CPPFILES += $(EVENT_CPP)
 CPPFILES += $(POLL_CPP)
 CPPFILES += $(SOCK_CPP)
+CPPFILES += $(EXCEPTION_CPP)
+CPPFILES += $(THREAD_CPP)
+CPPFILES += $(THREADPOOL_CPP)
+CPPFILES += $(CONDITION_CPP)
 
-
-INCLUDE = -I./socket -I./tcp -I./http -I./event -I./test
+INCLUDE = -I./socket -I./tcp -I./http -I./event -I./samplei -I./common -I./exception -I./mutex -I./threadpool
 
 OBJ = $(CPPFILES:.cpp=.o)
 
@@ -43,8 +69,7 @@ OBJ = $(CPPFILES:.cpp=.o)
 all : $(NAME)
 
 $(NAME): $(OBJ)
-	$(CPP) -o $(NAME) $(OBJ)
-
+	$(CPP) -o  $(NAME) $(OBJ) $(THREADFLAGS)
 
 .SUFFIXES : .cpp
 

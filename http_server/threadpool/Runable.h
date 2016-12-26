@@ -3,8 +3,8 @@
 class Runable
 {
 public:
-	Runable();
-	virtual ~Runable();
+	Runable(){};
+	virtual ~Runable(){};
 
 	virtual void run() = 0;
 };
