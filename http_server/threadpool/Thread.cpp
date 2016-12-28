@@ -102,5 +102,7 @@ void *Thread::callableEntry(void *pT)
 
 	pData->pCallbackTarget = nullptr;
 
+	pThread->_cond.notifyAll();
+
 	return nullptr;
 }

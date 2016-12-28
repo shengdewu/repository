@@ -3,12 +3,21 @@
 #include "AutoPtr.h"
 #include "Runable.h"
 #include "Condition.h"
+#ifdef _WINDOWS
+#include <memory>
+#include <functional>
+#else
 #include <tr1/memory>
+#include <tr1/functional>
+#endif
+
 
 class Thread
 {
 public:
-	typedef void(*Callable)(void *);
+	//typedef std::function<void (void *)>  Callable;
+	typedef void (*Callable)(void *);
+
 	struct CallbackData
 	{
 		CallbackData():callback(nullptr), pData(nullptr)
