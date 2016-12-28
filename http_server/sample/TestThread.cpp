@@ -40,6 +40,11 @@ private:
 	bool		_run;
 };
 
+void Run(void *pThis)
+{
+	std::cout << "this is test cb" << std::endl;
+}
+
 int main(int argc, char *argv[])
 {
 	Thread thread;
@@ -50,5 +55,12 @@ int main(int argc, char *argv[])
 	thread.join();
 	while(thread.isRunning());
 	std::cout << "MyRunable's cnt = " << r.getCnt() << std::endl;
+
+	//std::function<void (void*)>	func;
+	//func = Run;
+	thread.start(Run, nullptr);
+	thread.join();
+	while(thread.isRunning());
+	
 	return 0;
 }
