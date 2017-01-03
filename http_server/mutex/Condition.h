@@ -15,6 +15,8 @@ public:
 
 	void notifyAll();
 
+	void reset();
+
 private:
 	pthread_cond_t _cond;
 	pthread_mutex_t _mutex;

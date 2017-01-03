@@ -65,3 +65,11 @@ void Condition::notifyAll()
 	pthread_mutex_unlock(&_mutex);
 
 }
+
+void Condition::reset()
+{
+	if(pthread_mutex_lock(&_mutex))
+		throw Exception("wait for condition failed(lock)");
+	_state = false;
+	pthread_mutex_unlock(&_mutex);
+}

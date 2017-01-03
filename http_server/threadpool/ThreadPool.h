@@ -2,13 +2,21 @@
 #include <deque>
 #include <vector>
 #include <functional>
-#include "Condition.h"
+#include "MutexLock.h"
 
-class Thread;
+class PooledThread;
 class ThreadPool
 {
 public:
-	typedef std::function<void()>	Task;
+	//typedef void (*Task)(void *);
+	typedef std::function<void()> Task;
+	////外部定义
+	//// std::function<void()> func  = 
+	////  std::bind(&obj::func, 某个对象的成员函数
+	////            obj,   对象
+	////            this,  对象指针
+	////            std::placeholders::_1, 
+	////            std::placeholders::_2);
 
 public:
 	ThreadPool(int minCapacity = 2,
@@ -21,16 +29,28 @@ public:
 
 	~ThreadPool();
 
-	void start(int numThread);
-
+	bool start(Task task);
+	void stopAll();
+	void joinAll();
+	void collect();
+	int  allocate();
 private:
-	void runThred(void *pThis);
+	typedef std::vector<PooledThread*>	ThreadVec;
+	typedef std::vector<PooledThread*>::iterator ThreadVecIter;
+	typedef std::deque<Task>			TaskDeque;
+	
+	PooledThread *getThread();
+	void houseKeep();
+
 	int	_minCapacity;
 	int _maxCapacity;
 	int _idleTime;
 	int _serial;
 	int _stackSize;
-	Condition				_notEmpty;
-	std::deque<Task>		_queue;
-	std::vector<Thread*>	_thread;
+	int _age;
+	///控制收集线程的频率
+
+	TaskDeque		_queue;
+	ThreadVec		_thread;
+	MutexLock		_mutex;
 };
