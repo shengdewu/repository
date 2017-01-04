@@ -15,7 +15,7 @@
 class Thread
 {
 public:
-	//typedef std::function<void (void *)>  Callable;
+	//typedef std::tr1::function<void (void *)>  Callable;
 	typedef void (*Callable)(void *);
 
 	struct CallbackData

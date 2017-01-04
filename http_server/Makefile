@@ -44,10 +44,10 @@ CONDITION_CPP := $(addprefix $(MUTEX_SRC)/, $(CONDITION_CPP))
 MUTEXLOCK_CPP = MutexLock.cpp
 MUTEXLOCK_CPP := $(addprefix $(MUTEX_SRC)/, $(MUTEXLOCK_CPP))
 
-SCOPEMUTEXLOCK_CPP = ScopeMutexLock.cpp
-SCOPEMUTEXLOCK_CPP := $(addprefix $(MUTEX_SRC)/, $(SCOPEMUTEXLOCK_CPP))
+SCOPEDMUTEXLOCK_CPP = ScopedMutexLock.cpp
+SCOPEDMUTEXLOCK_CPP := $(addprefix ./mutex/, $(SCOPEDMUTEXLOCK_CPP))
 
-SAMPLE_CPP = TestThread.cpp
+SAMPLE_CPP = TestThreadPool.cpp
 SAMPLE_CPP := $(addprefix ./sample/, $(SAMPLE_CPP))
 
 CPPFILES = $(SAMPLE_CPP)
@@ -58,8 +58,14 @@ CPPFILES += $(EXCEPTION_CPP)
 CPPFILES += $(THREAD_CPP)
 CPPFILES += $(THREADPOOL_CPP)
 CPPFILES += $(CONDITION_CPP)
+CPPFILES += $(MUTEXLOCK_CPP)
+CPPFILES += $(SCOPEDMUTEXLOCK_CPP)
 
-INCLUDE = -I./socket -I./tcp -I./http -I./event -I./samplei -I./common -I./exception -I./mutex -I./threadpool
+INCLUDE = -I./socket -I./tcp -I./http -I./event
+INCLUDE += -I./sample 
+INCLUDE += -I./common
+INCLUDE += -I./exception -I./mutex
+INCLUDE += -I./threadpool
 
 OBJ = $(CPPFILES:.cpp=.o)
 

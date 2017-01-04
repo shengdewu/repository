@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 	while(thread.isRunning());
 	std::cout << "MyRunable's cnt = " << r.getCnt() << std::endl;
 
-	//std::function<void (void*)>	func;
+	//std::tr1::function<void (void*)>	func;
 	//func = Run;
 	thread.start(Run, nullptr);
 	thread.join();

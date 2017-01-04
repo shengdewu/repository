@@ -1,18 +1,23 @@
 #pragma once
 #include <deque>
 #include <vector>
+#ifdef _WINDOWS
 #include <functional>
+#else
+#include <tr1/functional>
+#endif
 #include "MutexLock.h"
+#include "Runable.h"
 
 class PooledThread;
 class ThreadPool
 {
 public:
 	//typedef void (*Task)(void *);
-	typedef std::function<void()> Task;
+	typedef std::tr1::function<void()> Task;
 	////外部定义
-	//// std::function<void()> func  = 
-	////  std::bind(&obj::func, 某个对象的成员函数
+	//// std::tr1::function<void(void *, int, int)> func  = 
+	////  std::tr1::bind(&obj::func, 某个对象的成员函数
 	////            obj,   对象
 	////            this,  对象指针
 	////            std::placeholders::_1, 
@@ -30,6 +35,7 @@ public:
 	~ThreadPool();
 
 	bool start(Task task);
+	bool start(Runable* pTarget);
 	void stopAll();
 	void joinAll();
 	void collect();

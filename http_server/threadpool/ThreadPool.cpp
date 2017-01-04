@@ -2,18 +2,27 @@
 #include "Thread.h"
 #include "ScopedMutexLock.h"
 #include <ctime>
+#include <iostream>
+
+//#define __CALLBACK;
 
 class PooledThread : public Runable
 {
 public:
+	
 	//typedef void (*Task)(void *);
-	typedef std::function<void()> Task;
+#ifdef __CALLBACK
+	typedef std::tr1::function<void()> TargetPtr;
+#else
+	typedef Runable*				   TargetPtr;	
+#endif
+
 public:
 	PooledThread();
 	~PooledThread();
 
 	void start();
-	bool start(Task pTask);
+	bool start(TargetPtr target);
 	///
 	void release();
 	///线程空闲时调用
@@ -21,7 +30,7 @@ public:
 	///等待run 执行完成,
 	int  idleTime();
 	bool idle();
-	
+	void activate();
 	void run();
 	
 private:
@@ -29,14 +38,14 @@ private:
 	Condition   _started;
 	Condition	_targetComplete;
 	MutexLock	_mutex;
-	Task		_pTask;
+	TargetPtr	_pTarget;
 	Thread		_thread;
 	std::time_t _idleTime;
 	bool		_idle;
 };
 
 PooledThread::PooledThread():
-	_pTask(nullptr),
+	_pTarget(nullptr),
 	_idleTime(0),
 	_idle(true)
 {
@@ -54,25 +63,32 @@ void PooledThread::start()
 	_started.wait();
 }
 
-bool PooledThread::start(Task pTask)
+bool PooledThread::start(TargetPtr pTarget)
 {
 	ScopedMutexLock lock(&_mutex);
-	if(nullptr == pTask)
+	if(nullptr == pTarget)
 	{
-		return true;
+		return false;
 	}
 
-	_pTask = pTask;
+	_pTarget = pTarget;
 
 	_targetReady.notify();
+
+	return true;
 }
+
+
 
 void PooledThread::join()
 {
 	_mutex.lock();
-	Task task = _pTask;
+	bool bjoin = false;
+	TargetPtr pTarget = _pTarget;
+	if(pTarget)
+		bjoin = true;
 	_mutex.unlock();
-	if(task)
+	if(bjoin)
 		_targetComplete.wait();
 }
 
@@ -80,8 +96,7 @@ void PooledThread::release()
 {
 	{
 		ScopedMutexLock lock(&_mutex);
-
-		_pTask = nullptr;
+		_pTarget = nullptr;
 
 		_targetReady.notify();
 	}
@@ -92,12 +107,19 @@ void PooledThread::release()
 
 int PooledThread::idleTime()
 {
+	ScopedMutexLock lock(&_mutex);
 	return (std::time(nullptr) - _idleTime);
 }
 
 bool PooledThread::idle()
 {
 	return _idle;
+}
+
+void PooledThread::activate()
+{
+	ScopedMutexLock lock(&_mutex);
+	_idle = false;
 }
 
 void PooledThread::run()
@@ -107,14 +129,20 @@ void PooledThread::run()
 	{
 		_targetReady.wait();
 		_mutex.lock();
-		if(_pTask)
+		if(_pTarget)
 		{
-			_idle = false;
+			//_idle = false;
+			///在这个地方置位，容易造成这个线程被其他对象抢占，
+			///比如两个start 间隔小，因为_idle还未被复位。
 			_mutex.unlock();
-			_pTask();
 
+#ifdef __CALLBACK
+			_pTarget();
+#else
+			_pTarget->run();
+#endif
 			ScopedMutexLock lock(&_mutex);
-			_pTask = nullptr;
+			_pTarget = nullptr;
 			_idleTime = std::time(nullptr);
 			_idle = true;
 			_targetComplete.notify();
@@ -141,7 +169,7 @@ ThreadPool::ThreadPool(int minCapacity,
 	if(_maxCapacity < _minCapacity || _minCapacity < 1)
 		throw Exception("ThreadPool", "thread capacity is small");
 
-	for(int i=0; i <= _minCapacity; i++)
+	for(int i=0; i < _minCapacity; i++)
 	{
 		PooledThread *pThread = new PooledThread();
 		_thread.push_back(pThread);
@@ -161,9 +189,27 @@ bool ThreadPool::start(Task task)
 	{
 		return false;
 	}
+#ifdef __CALLBACK
+	return pThread->start(task);
+#else
+	return false;
+#endif
 
-	pThread->start(task);
-	return true;
+}
+
+bool ThreadPool::start(Runable* pTarget)
+{
+	PooledThread *pThread = getThread();
+	if(nullptr == pThread)
+	{
+		return false;
+	}
+
+#ifndef __CALLBACK
+	return pThread->start(pTarget);
+#else
+	return false;
+#endif
 }
 
 void ThreadPool::stopAll()
@@ -192,10 +238,10 @@ void ThreadPool::joinAll()
 
 PooledThread* ThreadPool::getThread()
 {
+	ScopedMutexLock lock(&_mutex);
 	if(++_age == 32)
 		houseKeep();
 
-	ScopedMutexLock lock(&_mutex);
 	PooledThread *pThread = nullptr;
 	ThreadVecIter it = _thread.begin();
 	for(; it != _thread.end(); it ++)
@@ -203,6 +249,7 @@ PooledThread* ThreadPool::getThread()
 		if((*it)->idle())
 		{
 			pThread = *it;
+			break;
 		}
 	}
 
@@ -223,6 +270,8 @@ PooledThread* ThreadPool::getThread()
 			}
 		}
 	}
+	if(pThread)
+		pThread->activate();
 	return pThread;
 }
 
@@ -233,11 +282,12 @@ void ThreadPool::houseKeep()
 	{
 		return;
 	}
+
 	ThreadVec activeThreads;
 	ThreadVec idleThreads;
 	ThreadVec expiredThreads;
 	ThreadVecIter it = _thread.begin();
-	for(; it != _thread.end();)
+	for(; it != _thread.end(); it++)
 	{
 		if((*it)->idle())
 		{
@@ -250,6 +300,7 @@ void ThreadPool::houseKeep()
 	}
 
 	int limit = idleThreads.size() + activeThreads.size();
+
 	limit = limit < _minCapacity ? _minCapacity : limit;
 
 	idleThreads.insert(idleThreads.end(), expiredThreads.begin(), expiredThreads.end());
@@ -268,6 +319,7 @@ void ThreadPool::houseKeep()
 
 	_thread.insert(_thread.end(), activeThreads.begin(), activeThreads.end());
 }
+
 
 void ThreadPool::collect()
 {
