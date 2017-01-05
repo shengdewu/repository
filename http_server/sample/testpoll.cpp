@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
 	char *ip = argv[1];
 
 	SocketImp  server;
-	int lfd = server.Listen(ip, port);
+	int lfd = server.listen(ip, port);
 	if(-1 == lfd)
 	{
 	   std::cout << "the server listen is failed!" << std::endl;
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 		{
 			if(lfd == elist[i].Getfd())
 			{
-				int cfd = server.Accept(lfd);
+				int cfd = server.accept(lfd);
 				if(cfd < 0 )
 				{
 					std::cout << "the server accept is failed!" << cfd << std::endl;	
@@ -61,17 +61,17 @@ int main(int argc, char *argv[])
 			else
 			{
 				memset(pbuffer, '\0', nsize);
-				int num = server.Read(elist[i].Getfd(), pbuffer, nsize);
+				int num = server.read(elist[i].Getfd(), pbuffer, nsize);
 				if(num == 0)
 				{
 					std::cout << "the client " << elist[i].Getfd() << "is disconect"<<std::endl;
 					Event ev(elist[i].Getfd(), EventConst::EVENT_DEL);
 					p.Update(&ev);
-					server.Close(elist[i].Getfd());
+					server.close(elist[i].Getfd());
 				}
 				else if(num < 0)
 				{
-					server.Close(elist[i].Getfd());
+					server.close(elist[i].Getfd());
 					std::cout << "the sever receive error " << elist[i].Getfd()
 					<<strerror(errno)<<std::endl;
 				}
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 				{
 				        std::cout << "the server receive " << elist[i].Getfd() <<" bytes = "
 						 << num << "the context = " << pbuffer << std::endl;
-					server.Send(elist[i].Getfd(), pbuffer, num);
+					server.send(elist[i].Getfd(), pbuffer, num);
 				}
 			}
 		}

@@ -50,6 +50,24 @@ SCOPEDMUTEXLOCK_CPP := $(addprefix ./mutex/, $(SCOPEDMUTEXLOCK_CPP))
 SAMPLE_CPP = TestThreadPool.cpp
 SAMPLE_CPP := $(addprefix ./sample/, $(SAMPLE_CPP))
 
+###########################
+# log file
+
+LOGGER_CPP = Logger.cpp
+LOGGER_CPP := $(addprefix ./log/, $(LOGGER_CPP))
+
+MSGTEXT_CPP = MsgText.cpp
+MSGTEXT_CPP := $(addprefix ./log/, $(MSGTEXT_CPP))
+
+FILEHANDLE_CPP = FileHandle.cpp
+FILEHANDLE_CPP := $(addprefix ./log/, $(FILEHANDLE_CPP))
+
+LOGFILES = $(LOGGER_CPP)
+LOGFILES += $(MSGTEXT_CPP)
+LOGFILES += $(FILEHANDLE_CPP)
+
+LOGINC = ./log
+##########################
 CPPFILES = $(SAMPLE_CPP)
 CPPFILES += $(EVENT_CPP)
 CPPFILES += $(POLL_CPP)
@@ -60,12 +78,14 @@ CPPFILES += $(THREADPOOL_CPP)
 CPPFILES += $(CONDITION_CPP)
 CPPFILES += $(MUTEXLOCK_CPP)
 CPPFILES += $(SCOPEDMUTEXLOCK_CPP)
+CPPFILES += $(LOGFILES)
 
 INCLUDE = -I./socket -I./tcp -I./http -I./event
 INCLUDE += -I./sample 
 INCLUDE += -I./common
 INCLUDE += -I./exception -I./mutex
 INCLUDE += -I./threadpool
+INCLUDE += -I $(LOGINC)
 
 OBJ = $(CPPFILES:.cpp=.o)
 

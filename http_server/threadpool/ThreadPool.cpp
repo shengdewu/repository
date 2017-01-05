@@ -3,6 +3,7 @@
 #include "ScopedMutexLock.h"
 #include <ctime>
 #include <iostream>
+#include "Logger.h"
 
 //#define __CALLBACK;
 
@@ -175,6 +176,8 @@ ThreadPool::ThreadPool(int minCapacity,
 		_thread.push_back(pThread);
 		pThread->start();
 	}
+
+	logger_log(Logger::getLogger("Http.log"), "The thread pool is start up");
 }
 
 ThreadPool::~ThreadPool()
