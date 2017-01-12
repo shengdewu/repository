@@ -2,6 +2,7 @@
 #include "ThreadPool.h"
 #include "Condition.h"
 #include <ctime>
+#include "Logger.h"
 
 void srun(int n)
 {
@@ -131,7 +132,8 @@ public:
 
 		tpool.joinAll();
 		tpool.stopAll();
-		std::cout << "the pool stop,thread pool size = "<< tpool.allocate() <<",the cnt = "<< _cnt << std::endl;
+
+		Logger::getLogger("http.log")->log("the pool stop,thread pool size =", __FILE__, __LINE__) << "the cnt = " << _cnt;
 
 	}
 private:

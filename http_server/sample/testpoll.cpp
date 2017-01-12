@@ -1,4 +1,4 @@
-#include "SocketImp.h"
+#include "Socketer.h"
 #include "PollImp.h"
 #include <stdlib.h>
 #include <iostream>
@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 	int port = atoi(argv[2]);
 	char *ip = argv[1];
 
-	SocketImp  server;
+	Socketer  server;
 	int lfd = server.listen(ip, port);
 	if(-1 == lfd)
 	{
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 		{
 			if(lfd == elist[i].Getfd())
 			{
-				int cfd = server.accept(lfd);
+				int cfd = server.accept();
 				if(cfd < 0 )
 				{
 					std::cout << "the server accept is failed!" << cfd << std::endl;	
