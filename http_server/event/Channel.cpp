@@ -25,6 +25,14 @@ void Channel::handleEvent()
 
 }
 
+void Channel::remove()
+{
+	if(_pLoop)
+	{
+		_pLoop->removeChannel(this);
+	}
+}
+
 void Channel::update()
 {
 	if(_pLoop)

@@ -25,6 +25,8 @@ public:
 	void setErrorCallback(const EventCallback &errorCallback);
 	void handleEvent();
 	int events();
+	void remove();
+	bool isNonevent();
 
 private:
 	void update();
@@ -118,4 +120,10 @@ inline	void Channel::setErrorCallback(const EventCallback &errorCallback)
 inline int Channel::events()
 {
 	return _events;
+}
+
+
+inline bool Channel::isNonevent()
+{
+	return (_events == KNONEVENT);
 }

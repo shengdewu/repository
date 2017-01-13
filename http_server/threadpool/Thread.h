@@ -3,13 +3,13 @@
 #include "AutoPtr.h"
 #include "Runable.h"
 #include "Condition.h"
+#include <functional>
 #ifdef _WINDOWS
 #include <memory>
-#include <functional>
 #else
 #include <tr1/memory>
-#include <tr1/functional>
 #endif
+
 
 
 class Thread
@@ -34,6 +34,7 @@ public:
 	void start(Callable target, void *pData);
 	void join();
 	bool isRunning();
+	static pthread_t currentThreadID();
 
 private:
 	static void* runableEntry(void *pT);

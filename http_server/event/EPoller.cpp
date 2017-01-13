@@ -5,11 +5,12 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 namespace 
 {
-	const int KADD = -1;
-	const int KMOD = 1;
+	const int KNEW = -1;
+	const int KADD = 1;
 	const int KDELETE = 2;
 }
 
@@ -22,7 +23,7 @@ EPoller::EPoller(void):
 
 EPoller::~EPoller(void)
 {
-	Logger::releseLogger("epoll.log");
+	Logger::releseLogger(LOGGER_NAME);
 }
 
 int	 EPoller::poll(int timeout, ChannelList& activeChannel)
@@ -32,8 +33,8 @@ int	 EPoller::poll(int timeout, ChannelList& activeChannel)
 	int numEvents = ::epoll_wait(_epfd, &(*_events.begin()), _events.size(), timeout);
 	if(numEvents < 0)
 	{
-		logger_log(Logger::getLogger("epoll.log"), "poll failed:");
-		(*Logger::getLogger("epoll.log"))<<"errno = " << errno << strerror(errno);
+		logger_log(Logger::getLogger(LOGGER_NAME), "poll failed:");
+		(*Logger::getLogger(LOGGER_NAME))<<"errno = " << errno << strerror(errno);
 		return numEvents;
 	}
 
@@ -57,36 +58,62 @@ void EPoller::updateChannel(Channel *pChannel)
 	}
 
 	int index = pChannel->index();
-	int fd = pChannel->fd();
-	ChannelMapIter iter = _channelMap.find(fd);
-	int opt = 0;
-	if(iter == _channelMap.end() && KADD == index) //新增
+	if(KNEW == index || KDELETE == index)//channel 是新的，或者事件已被清除了的
 	{
-		opt = EPOLL_CTL_ADD;
-		ScopedMutexLock lock(&_mutex);
-		_channelMap[fd] = pChannel;
-	}
-	else if(iter != _channelMap.end() && KADD != index) //修改或删除
-	{
-		if(KDELETE ==index)
+		int fd = pChannel->fd();
+		ChannelMapIter iter = _channelMap.find(fd);
+		if(KNEW == index)
 		{
-			opt = EPOLL_CTL_DEL;
-			ScopedMutexLock lock(&_mutex);
-			_channelMap.erase(iter);
+			if(iter == _channelMap.end())
+			{
+				_channelMap[fd] = pChannel;
+			}			
+		}
+		else//kdelete
+		{
+			//此情况下，_channelMap应该有这个 channel，只是事件被卸载了
+			assert(iter == _channelMap.end());
+		}
+
+		pChannel->setIndex(KADD);
+		update(EPOLL_CTL_ADD, pChannel);
+	}
+	else //kADD
+	{
+		int fd = pChannel->fd();
+		ChannelMapIter iter = _channelMap.find(fd);
+
+		assert(iter != _channelMap.end());
+		
+		if(pChannel->isNonevent())
+		{
+			pChannel->setIndex(KDELETE);
+			update(EPOLL_CTL_DEL, pChannel);
 		}
 		else
 		{
-			opt = EPOLL_CTL_MOD;
+			update(EPOLL_CTL_MOD, pChannel);
 		}
 	}
-	else
+}
+
+void EPoller::removeChannel(Channel *pChannel)
+{
+	if(nullptr == pChannel)
 	{
-		std::string strlog = createlogger("epoll updateChannel is invalid :", pChannel);
-		logger_log(Logger::getLogger("epoll.log"), strlog);
 		return;
 	}
-
-	update(opt, pChannel);
+	int index = pChannel->index();
+	int fd = pChannel->fd();
+	ChannelMapIter iter = _channelMap.find(fd);
+	assert(iter != _channelMap.end());
+	_channelMap.erase(iter);
+	assert(index == KADD || index == KDELETE);
+	if(KADD == index && !pChannel->isNonevent())
+	{
+		update(EPOLL_CTL_DEL, pChannel);
+	}
+	pChannel->setIndex(KNEW);
 }
 
 void EPoller::update(int opt, Channel *pChannel)
@@ -100,7 +127,7 @@ void EPoller::update(int opt, Channel *pChannel)
 	if(::epoll_ctl(_epfd, opt, fd, &ev) < 0)
 	{
 		std::string strlog = createlogger(strlog, pChannel);
-		(Logger::getLogger("epoll.log"))->log("epoll update is failed:", __FILE__, __LINE__) 
+		(Logger::getLogger(LOGGER_NAME))->log("epoll update is failed:", __FILE__, __LINE__) 
 				<< "opt = " << eventToString(opt) 
 				<< ","<<strlog;
 		
@@ -114,7 +141,7 @@ void EPoller::fillChannelEvents(int num, ChannelList& activeChannel)
 		return;
 	}
 
-	(Logger::getLogger("epoll.log"))->log("fillChannelEvents:", __FILE__, __LINE__) << "nums = " << num;
+	(Logger::getLogger(LOGGER_NAME))->log("fillChannelEvents:", __FILE__, __LINE__) << "nums = " << num;
 
 	for(int i=0; i<num; i++)
 	{

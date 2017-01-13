@@ -80,6 +80,11 @@ bool Thread::isRunning()
 	return false;
 }
 
+pthread_t Thread::currentThreadID()
+{
+	return pthread_self();
+}
+
 void *Thread::runableEntry(void *pT)
 {
 	Thread *pThread = reinterpret_cast<Thread*>(pT);

@@ -18,6 +18,7 @@ public:
 	int	 poll(int timeout, ChannelList& activeChannel);
 
 	void updateChannel(Channel *pChannel);
+	void removeChannel(Channel *pChannel);
 
 private:
 	void update(int opt, Channel *pChannel);
@@ -26,6 +27,7 @@ private:
 	std::string eventToString(int opt);
 	
 	static const int	KEVENTS_INITS = 16;
+	const char * const  LOGGER_NAME = "epoller.log";
 
 	int			_epfd;
 	EventList	_events;
