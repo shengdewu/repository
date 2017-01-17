@@ -33,8 +33,7 @@ int	 EPoller::poll(int timeout, ChannelList& activeChannel)
 	int numEvents = ::epoll_wait(_epfd, &(*_events.begin()), _events.size(), timeout);
 	if(numEvents < 0)
 	{
-		logger_log(Logger::getLogger(LOGGER_NAME), "poll failed:");
-		(*Logger::getLogger(LOGGER_NAME))<<"errno = " << errno << strerror(errno);
+		LOGGER(Logger::getLogger(LOGGER_NAME)) << "errno = " << errno << strerror(errno) << "\n";
 		return numEvents;
 	}
 
@@ -127,9 +126,9 @@ void EPoller::update(int opt, Channel *pChannel)
 	if(::epoll_ctl(_epfd, opt, fd, &ev) < 0)
 	{
 		std::string strlog = createlogger(strlog, pChannel);
-		(Logger::getLogger(LOGGER_NAME))->log("epoll update is failed:", __FILE__, __LINE__) 
+		LOGGER(Logger::getLogger(LOGGER_NAME)) << "epoll update is failed:"
 				<< "opt = " << eventToString(opt) 
-				<< ","<<strlog;
+				<< ","<<strlog << "\n";
 		
 	}
 }
@@ -141,7 +140,7 @@ void EPoller::fillChannelEvents(int num, ChannelList& activeChannel)
 		return;
 	}
 
-	(Logger::getLogger(LOGGER_NAME))->log("fillChannelEvents:", __FILE__, __LINE__) << "nums = " << num;
+	LOGGER(Logger::getLogger(LOGGER_NAME)) << "fillChannelEvents:" << "nums = " << num << "\n";
 
 	for(int i=0; i<num; i++)
 	{

@@ -5,4 +5,4 @@
 #define   LOG_FILE_ERROR -1
 
 ///日志文件名
-#define  LOG_DEFAULT_NAME  "Http.log"
+#define  LOG_DEFAULT_NAME  "log.log"

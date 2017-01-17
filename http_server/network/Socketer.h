@@ -16,6 +16,8 @@ private:
 	int setOpt(const int fd);
 	
 private:
+	const char * const LOGGER_NAME = "socket.log";
+
 	const int   SOCKET_ERR;
 	const int   MAX_BACKLOG;
 private:

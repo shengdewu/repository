@@ -45,6 +45,8 @@ private:
 	typedef std::vector<PooledThread*>::iterator ThreadVecIter;
 	typedef std::deque<Task>			TaskDeque;
 	
+	const char * const LOGGER_NAME = "threadpool.log";
+
 	PooledThread *getThread();
 	void houseKeep();
 

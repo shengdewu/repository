@@ -76,7 +76,9 @@ int EventLoop::createEventfd()
 	int fd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
 	if(fd < 0)
 	{
-		logger_log(Logger::getLogger(LOGGER_NAME), "filed in eventfd");
+		//logger_log(Logger::getLogger(LOGGER_NAME), "filed in eventfd");
+		LOGGER(Logger::getLogger(LOGGER_NAME)) << "filed in eventfd" << "\n";
+
 		abort();
 	}
 	return fd;

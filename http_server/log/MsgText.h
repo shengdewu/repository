@@ -6,13 +6,13 @@ class MsgText
 public:
 	MsgText(void);
 	~MsgText(void);
-	void setFile(const std::string &file, const int line, const std::string &context);
+	void setFile(const std::string &file, const int line);
 	std::string format();
+	std::string format(const std::string &context);
 
 private:
 	std::string  _file;
 	int			 _line;
-	std::string   _context;
 	long long	  _time;
 };
 

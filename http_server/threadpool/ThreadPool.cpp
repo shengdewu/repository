@@ -55,7 +55,6 @@ PooledThread::PooledThread():
 
 PooledThread::~PooledThread()
 {
-	Logger::releseLogger("threadpool.log");
 }
 
 void PooledThread::start()
@@ -177,12 +176,12 @@ ThreadPool::ThreadPool(int minCapacity,
 		pThread->start();
 	}
 
-	logger_log(Logger::getLogger("threadpool.log"), "The thread pool is start up");
+	LOGGER(Logger::getLogger(LOGGER_NAME)) << "The thread pool is start up" << "\n";
 }
 
 ThreadPool::~ThreadPool()
 {
-
+	Logger::releseLogger(LOGGER_NAME);
 }
 
 bool ThreadPool::start(Task task)

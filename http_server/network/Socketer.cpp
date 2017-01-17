@@ -25,7 +25,7 @@ Socketer::~Socketer(void)
 	if(SOCKET_ERR != _fd)
 		::close(_fd);
 
-	Logger::releseLogger("socket.log");
+	Logger::releseLogger(LOGGER_NAME);
 }
 
 
@@ -34,8 +34,8 @@ int Socketer::listen(const char *ip, const int port, int backlog)
 	_fd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if(SOCKET_ERR == _fd)
 	{
-		logger_log(Logger::getLogger("socket.log"), "The Socketer is socketing that is failed");
-		(*Logger::getLogger("socket.log")) << ":ip = " << ip << ",port:" << port;
+		LOGGER(Logger::getLogger(LOGGER_NAME)) << "The Socketer is socketing that is failed"
+			<< ":ip = " << ip << ",port:" << port << "\n";
 		return SOCKET_ERR;
 	}
 	
@@ -128,7 +128,7 @@ int Socketer::setOpt(const int fd)
 
 	if(SOCKET_ERR == flags)
 	{
-		logger_log(Logger::getLogger("socket.log"), "The Socketer is setOpting that is failed");
+		logger_log(Logger::getLogger(LOGGER_NAME), "The Socketer is setOpting that is failed");
 		return SOCKET_ERR;
 	}
 
@@ -138,7 +138,7 @@ int Socketer::setOpt(const int fd)
 
 	if(SOCKET_ERR == flags)
 	{
-		logger_log(Logger::getLogger("socket.log"), "The Socketer is setOpting that is failed");
+		logger_log(Logger::getLogger(LOGGER_NAME), "The Socketer is setOpting that is failed");
 		return SOCKET_ERR;
 	}
 

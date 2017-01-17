@@ -106,10 +106,13 @@ MSGTEXT_CPP := $(addprefix $(LOGINC)/, $(MSGTEXT_CPP))
 FILEHANDLE_CPP = FileHandle.cpp
 FILEHANDLE_CPP := $(addprefix $(LOGINC)/, $(FILEHANDLE_CPP))
 
+LOGGERSTREAM_CPP = LoggerStream.cpp
+LOGGERSTREAM_CPP := $(addprefix $(LOGINC)/, $(LOGGERSTREAM_CPP))
+
 LOGFILES = $(LOGGER_CPP)
 LOGFILES += $(MSGTEXT_CPP)
 LOGFILES += $(FILEHANDLE_CPP)
-
+LOGFILES += $(LOGGERSTREAM_CPP)
 
 ###########################
 #obj files
