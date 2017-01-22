@@ -76,8 +76,8 @@ int EventLoop::createEventfd()
 	int fd = ::eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
 	if(fd < 0)
 	{
-		//logger_log(Logger::getLogger(LOGGER_NAME), "filed in eventfd");
-		LOGGER(Logger::getLogger(LOGGER_NAME)) << "filed in eventfd" << "\n";
+		//LOGGER_LOG(Logger::getLogger(LOGGER_NAME), "filed in eventfd");
+		LOGGER_STREAM(Logger::getLogger(LOGGER_NAME)) << "filed in eventfd" << "\n";
 
 		abort();
 	}
@@ -89,7 +89,7 @@ void EventLoop::wakeup()
 	const char one = 'w';
 	Socketer wake;
 	wake.send(_wakeupFd, &one, sizeof(one));
-	logger_log(Logger::getLogger(LOGGER_NAME), "wakeup");
+	LOGGER_LOG(Logger::getLogger(LOGGER_NAME), "wakeup");
 }
 
 void EventLoop::handleRead()
@@ -97,7 +97,7 @@ void EventLoop::handleRead()
 	char one;
 	Socketer wake;
 	wake.read(_wakeupFd, &one, sizeof(one));
-	logger_log(Logger::getLogger(LOGGER_NAME), "handleRead");
+	LOGGER_LOG(Logger::getLogger(LOGGER_NAME), "handleRead");
 }
 
 void EventLoop::doPendingFunctor()

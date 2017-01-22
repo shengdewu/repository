@@ -34,7 +34,7 @@ int Socketer::listen(const char *ip, const int port, int backlog)
 	_fd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if(SOCKET_ERR == _fd)
 	{
-		LOGGER(Logger::getLogger(LOGGER_NAME)) << "The Socketer is socketing that is failed"
+		LOGGER_STREAM(Logger::getLogger(LOGGER_NAME)) << "The Socketer is socketing that is failed"
 			<< ":ip = " << ip << ",port:" << port << "\n";
 		return SOCKET_ERR;
 	}
@@ -128,7 +128,7 @@ int Socketer::setOpt(const int fd)
 
 	if(SOCKET_ERR == flags)
 	{
-		logger_log(Logger::getLogger(LOGGER_NAME), "The Socketer is setOpting that is failed");
+		LOGGER_LOG(Logger::getLogger(LOGGER_NAME), "The Socketer is setOpting that is failed");
 		return SOCKET_ERR;
 	}
 
@@ -138,7 +138,7 @@ int Socketer::setOpt(const int fd)
 
 	if(SOCKET_ERR == flags)
 	{
-		logger_log(Logger::getLogger(LOGGER_NAME), "The Socketer is setOpting that is failed");
+		LOGGER_LOG(Logger::getLogger(LOGGER_NAME), "The Socketer is setOpting that is failed");
 		return SOCKET_ERR;
 	}
 

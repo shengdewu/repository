@@ -33,7 +33,7 @@ int	 EPoller::poll(int timeout, ChannelList& activeChannel)
 	int numEvents = ::epoll_wait(_epfd, &(*_events.begin()), _events.size(), timeout);
 	if(numEvents < 0)
 	{
-		LOGGER(Logger::getLogger(LOGGER_NAME)) << "errno = " << errno << strerror(errno) << "\n";
+		LOGGER_STREAM(Logger::getLogger(LOGGER_NAME)) << "errno = " << errno << strerror(errno) << "\n";
 		return numEvents;
 	}
 
@@ -59,19 +59,23 @@ void EPoller::updateChannel(Channel *pChannel)
 	int index = pChannel->index();
 	if(KNEW == index || KDELETE == index)//channel 是新的，或者事件已被清除了的
 	{
+		if(pChannel->isNonevent())
+		//没有事件，则退出
+		{
+			return;
+		}
 		int fd = pChannel->fd();
 		ChannelMapIter iter = _channelMap.find(fd);
 		if(KNEW == index)
 		{
-			if(iter == _channelMap.end())
-			{
-				_channelMap[fd] = pChannel;
-			}			
+			assert(iter != _channelMap.end());
+			//此情况下，_channelMap应该没有这个 channel，
+			_channelMap[fd] = pChannel;			
 		}
 		else//kdelete
 		{
-			//此情况下，_channelMap应该有这个 channel，只是事件被卸载了
 			assert(iter == _channelMap.end());
+			//此情况下，_channelMap应该有这个 channel，只是事件被卸载了
 		}
 
 		pChannel->setIndex(KADD);
@@ -126,7 +130,7 @@ void EPoller::update(int opt, Channel *pChannel)
 	if(::epoll_ctl(_epfd, opt, fd, &ev) < 0)
 	{
 		std::string strlog = createlogger(strlog, pChannel);
-		LOGGER(Logger::getLogger(LOGGER_NAME)) << "epoll update is failed:"
+		LOGGER_STREAM(Logger::getLogger(LOGGER_NAME)) << "epoll update is failed:"
 				<< "opt = " << eventToString(opt) 
 				<< ","<<strlog << "\n";
 		
@@ -140,7 +144,7 @@ void EPoller::fillChannelEvents(int num, ChannelList& activeChannel)
 		return;
 	}
 
-	LOGGER(Logger::getLogger(LOGGER_NAME)) << "fillChannelEvents:" << "nums = " << num << "\n";
+	LOGGER_STREAM(Logger::getLogger(LOGGER_NAME)) << "fillChannelEvents:" << "nums = " << num << "\n";
 
 	for(int i=0; i<num; i++)
 	{

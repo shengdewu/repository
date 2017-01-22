@@ -133,7 +133,7 @@ public:
 		tpool.joinAll();
 		tpool.stopAll();
 
-		LOGGER(Logger::getLogger("http.log")) << "the pool stop,thread pool size =" << "the cnt = " << _cnt << "\n";
+		LOGGER_STREAM(Logger::getLogger("http.log")) << "the pool stop,thread pool size =" << "the cnt = " << _cnt << "\n";
 		Logger::releseLogger("http.log");
 
 	}

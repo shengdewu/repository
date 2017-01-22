@@ -176,7 +176,7 @@ ThreadPool::ThreadPool(int minCapacity,
 		pThread->start();
 	}
 
-	LOGGER(Logger::getLogger(LOGGER_NAME)) << "The thread pool is start up" << "\n";
+	LOGGER_STREAM(Logger::getLogger(LOGGER_NAME)) << "The thread pool is start up" << "\n";
 }
 
 ThreadPool::~ThreadPool()

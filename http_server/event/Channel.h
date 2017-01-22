@@ -15,6 +15,7 @@ public:
 	void enableWriteing();
 	void disableReading();
 	void disableWriteing();
+	void disableAlling();
 	int	 fd();
 	void setRevent(int re);
 	void setIndex(int index);
@@ -75,6 +76,11 @@ inline void Channel::disableWriteing()
 	update();
 }
 
+inline void Channel::disableAlling()
+{
+	_events = KNONEVENT;
+	update();
+}
 
 inline int Channel::fd()
 {

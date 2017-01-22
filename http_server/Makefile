@@ -118,7 +118,7 @@ LOGFILES += $(LOGGERSTREAM_CPP)
 #obj files
 TARGETINC = ./sample
 
-SAMPLE_CPP = TestThreadPool.cpp
+SAMPLE_CPP = testEvent.cpp
 SAMPLE_CPP := $(addprefix $(TARGETINC)/, $(SAMPLE_CPP))
 
 TARGETFILES = $(SAMPLE_CPP)

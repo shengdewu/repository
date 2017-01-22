@@ -46,9 +46,9 @@ inline LoggerStream &Logger::logStream()
 // convenience macros
 //
 
-#define logger_log(logger, msg)\
+#define LOGGER_LOG(logger, msg)\
 	if(logger) (logger)->log((msg), (__FILE__), (__LINE__)); else (void) 0
 
-#define LOGGER(logger)\
+#define LOGGER_STREAM(logger)\
 	if(logger) (logger)->log((__FILE__), (__LINE__)).logStream()
 

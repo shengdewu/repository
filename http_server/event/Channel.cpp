@@ -22,7 +22,38 @@ Channel::~Channel(void)
 
 void Channel::handleEvent()
 {
+	if(_revents & (EPOLLIN | EPOLLRDHUP | EPOLLPRI))
+	// read  返回 0 关闭 客户端 套接字
+	{
+		if(_readCallback)
+		{
+			_readCallback();
+		}
+	}
 
+	if(_revents & EPOLLOUT)
+	{
+		if(_writeCallback)
+		{
+			_writeCallback();
+		}
+	}
+
+	if(_revents & EPOLLERR)
+	{
+		if(_errorCallback)
+		{
+			_errorCallback();
+		}
+	}
+
+	if(_revents & EPOLLHUP)
+	{
+		if(_closeCallback)
+		{
+			_closeCallback();
+		}
+	}
 }
 
 void Channel::remove()
